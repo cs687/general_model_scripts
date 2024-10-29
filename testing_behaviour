@@ -1,0 +1,5 @@
+
+params = [0.1,0.01,2,0.001]; #(τ, v0, n, η) might work: params = [0.1,0.02,3,0.1]
+bg = BehaviourGrid(params,dataset); 
+# p=plot_behaviour_grid(bg,start_s_slice=100,idx_axis=false,xguide="D",yguide="S")
+p=plot_behaviour_grid(bg,start_s_slice=100,idx_axis=false)

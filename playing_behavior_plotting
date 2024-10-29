@@ -1,0 +1,29 @@
+bg = BehaviourGrid(params,dataset); 
+p=plot_behaviour_grid2(bg,start_s_slice=100,idx_axis=false,xguide="D",yguide="S")
+
+behaviour_grid=bg
+start_s_slice=100,idx_axis=false,xguide="D",yguide="S")
+
+bg = BehaviourGrid(params,dataset); 
+p=plot_behaviour_grid2(bg,start_s_slice=100,idx_axis=false,xguide="D",yguide="S")
+
+function plot_behaviour_grid2(::BehaviourGrid;start_s_slice=1,start_d_slice=1,smooth=true,idx_axis=true,xticks=nothing,yticks=nothing,set_param_title=false,markers=[],marker_color=RGB{Float64}(0.,0.,0.),title="",xguide="",yguide="",kwargs...)
+    set_param_title && (title="τ=$(behaviour_grid.params[1]), v0=$(behaviour_grid.params[2]), n=$(behaviour_grid.params[3]), η=$(behaviour_grid.params[4])")
+    if idx_axis 
+        (xticks===nothing) && (xticks = 10:20:length(D_grid[start_d_slice:end]))
+        (yticks===nothing) && (yticks = 10:20:length(S_grid[start_s_slice:end]))
+    else
+        #(xticks===nothing) && (xticks = (range(1, length(D_grid[start_d_slice:end]), length = 9), map(i->i[1:3],string.(10 .^(range(log10(D_grid[start_d_slice]),stop=2,length=9))))))
+        #(yticks===nothing) && (yticks = (range(1, length(S_grid[start_s_slice:end]), length = 6), map(i->i[1:3],string.(10 .^(range(log10(S_grid[start_s_slice]),stop=2,length=6))))))
+        (xticks===nothing) && (xticks = (range(1, length(D_grid[start_d_slice:end]), length = 4), map(i->i[1:3],string.(10 .^(range(log10(D_grid[start_d_slice]),stop=2,length=4))))))
+        (yticks===nothing) && (yticks = (range(1, length(S_grid[start_s_slice:end]), length = 4), map(i->i[1:3],string.(10 .^(range(log10(S_grid[start_s_slice]),stop=2,length=4))))))
+    end
+    color_grid = get_color.(behaviour_grid.behaviours)[start_s_slice:end,start_d_slice:end]
+    p = plot((smooth ? smooth_colors(color_grid) : color_grid),yflip=false,aspect_ratio=:none,framestyle=:box,title=title,xguide=xguide,yguide=yguide,bottom_margin=3mm,left_margin=15mm,xticks=xticks,yticks=yticks,kwargs...)
+    foreach(pos -> (p  = scatter!((pos[2],pos[1]),label="",color=marker_color)), markers)
+    plot!(xlimit=(1,length(behaviour_grid.D_grid)-start_d_slice+1), ylimit=(1,length(behaviour_grid.S_grid)-start_s_slice+1))
+    return p
+end
+
+
+

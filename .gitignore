@@ -1,0 +1,6 @@
+#ignore conda
+.CondaPkg/
+#removing other folders
+Data/
+Figures/
+playing/

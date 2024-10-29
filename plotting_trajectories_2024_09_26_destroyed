@@ -1,0 +1,212 @@
+####################
+### Preparations ###
+####################
+
+#################################### Fixed Parameters #################################
+# fix_S=4.5;
+fix_S_all=[4,4.5,5]; #fixed S (horizontal line)
+num_traces=100; #number of simulated traces per parameter value
+params = [0.2,0.01,2,0.05]; #Plotted behaviour grid:  #(τ, v0, n, η)
+file_name="tau_"*string(params[1])*"-v0_"*string(params[2])*"-n_"*string(params[3])*"-nu_"*string(params[4]);
+folder_name="../Simulation_Data/Behaviour_map_"*file_name;
+
+
+#####Check if output folder exists
+if !isdir(folder_name)
+    mkdir(folder_name);
+end
+
+
+### Behaviour Map Parameters ###
+S_grid = 10 .^(range(-1,stop=2,length=300))
+D_grid = 10 .^(range(-1,stop=2,length=300))
+τ_grid = [0.1,0.15,0.20,0.30,0.50,0.75,1.0,1.5,2.0,3.0,5.0,7.50,10.0,15.0,20.0,30.0,50.0,75.0,100.0]
+v0_grid = [0.01,0.02,0.03,0.05,0.075,0.1,0.15,0.20]
+n_grid = [2.0,3.0,4.0]
+η_grid = [0.001,0.002,0.005,0.01,0.02,0.05,0.1]
+
+###################################Functions to include#################################
+### Fetch Functions ###
+include("../Codebase/basic_analysis.jl")
+include("../Codebase/file_management.jl")
+include("../Codebase/utility.jl")
+include("../Codebase/basic_plotting.jl")
+include("../Codebase/models.jl")
+include("../Codebase/model_simulation.jl")
+include("../Codebase/behaviour_grid_loading.jl")
+include("../Codebase/behaviour_grid_plotting.jl")
+
+# Fetch packages.
+using Plots, Plots.Measures
+using BifurcationKit
+using DelimitedFiles
+using MAT
+using Plots
+
+
+
+# Sets other values.
+const mm = Plots.mm
+p0_gr = let
+    gr()
+    plot(xticks=[],yticks=[],foreground_color_border=:white)
+end
+p0 = let
+    gr()
+    # pythonplot()
+    plot(xticks=[],yticks=[],foreground_color_border=:white)
+end
+gr()
+
+###########################Simulate and plots the activations of a monte carlo assemble of trajectories.##########################
+plot_activations_cs(args...;kwargs...) = (plot(); plot_activations_cs!(args...;kwargs...);)
+
+target_folder = "BehaviourMap"
+dataset = DataSet(target_folder,S_grid,D_grid,τ_grid,v0_grid,n_grid,η_grid);
+
+
+########################### Plot Settings #################################################################################
+# Default values.
+gr()
+default(fmt = :png, framestyle=:box, grid=false, xguidefontsize=16, yguidefontsize=16, titlefontsize=18);
+
+# Sets colour scales.
+red_scale = make_red_scale(4);
+bluegreen_scale = make_bluegreen_scale(4);
+blue_scale= make_blue_scale(3);
+
+
+####################
+### Make Figure ####
+####################
+
+###############################################################################################
+##########################Plotting and saving behaviour grid###################################
+###############################################################################################
+#Plotting bahaviour grid for paramters params e.g.( params=[0.2,0.01,2,0.05]; #Plotted behaviour grid:  #(τ, v0, n, η) )
+bg = BehaviourGrid(params,dataset);
+plot_behaviour_grid(bg,start_s_slice=100,idx_axis=false,xguide="D",yguide="S")
+
+#saving behaviourmap as mat file
+save_behaviour_grid_as_mat(bg,folder_name *"/behavior_map_"* file_name * ".mat");
+
+
+############################adding point where sample is taken to bahviour plot###############################
+#not sure if this is working
+samples=[];
+for fix_S in fix_S_all
+    println(fix_S)
+    samples = [
+    (0.1, fix_S),(0.2, fix_S),(0.5, fix_S),
+    (1, fix_S),(2, fix_S),(3, fix_S),
+    (4, fix_S),(5, fix_S),(6, fix_S),(7, fix_S),(8, fix_S),
+    (9, fix_S),(10, fix_S),(15, fix_S),
+    (20, fix_S),(50, fix_S)]
+
+
+    #Setting Plotting params
+    #1 = @layout grid(1,length(samples))
+    layout = @layout grid(length(fix_S_all),length(samples))
+    sample_idxs = [(findfirst(D_grid .> pos[1]), findfirst(S_grid .> pos[2]) - 100) for pos in samples]
+    behaviour_plot = scatter!(sample_idxs,label="",color=:white,xlimit=(-Inf,Inf),ylimit=(-Inf,Inf),markersize=3)
+end
+
+# Make simulation plots.
+make_p(ps, sample) = [sample[2]; sample[1]; ps]
+sample_ps = [make_p(params, sample) for sample in samples]
+display(behaviour_plot)
+# savefig("test.png")
+savefig(folder_name*"/behaviour_plot.png")
+
+
+
+#####################Generating Traces for plots at samples in S/D space and save them as a mat file ###################
+#set params
+lw = 3
+t_pts = (-50.0, 0.0, 250.0)
+ymax = 1.35;
+
+#Generating files
+for i in 1:length(sample_ps)
+    plots,sols =plot_activations_cs(sample_ps[i], t_pts, num_traces; ymax=ymax, lw=lw, xguide="Time", yguide="fuckoff", saveat=0.2)
+    traces= ensemble_to_matrix(sols)
+    matwrite(folder_name*
+             "/S_"*string(sample_ps[i][1])*
+             "-D_"*string(sample_ps[i][2])*
+             "-"*file_name*".mat", Dict("traces" => traces))
+
+    # matwrite("../Simulation_Data/S_"*string(sample_ps[i][1])*
+    # "-D_"*string(sample_ps[i][2])*
+    # "-tau_"*string(sample_ps[i][3])*
+    # "-v0_"*string(sample_ps[i][4])*
+    # "-n_"*string(sample_ps[i][5])*
+    # "-nu_"*string(sample_ps[i][6])*
+    # ".mat", Dict("traces" => traces))
+end
+
+
+
+
+#############################################################################
+#############################################################################
+# Functions to run scripts
+#############################################################################
+#############################################################################
+function plot_activations_cs!(p_vals::Vector{Float64}, t_vals::Tuple{Float64,Float64,Float64}, n::Int64; model=model3, ymax=Inf, lw=4, la=0.6, colors=make_blue_scale(n; matrix_form=true), activation_lw=7, activation_la=0.8, xticks=[], yticks=[], saveat=0.05, adaptive=false, dt=0.0025, maxiters=1e6, xguide="Time", yguide="Concentration", gillespie=false, plot_nc_minmaxes=false, lw_nc_mm=1.0, la_nc_mm=0.9, kwargs...)
+    sols = gillespie ? 
+        ssa_monte_activation(p_vals, (t_vals[1],t_vals[3]), t_vals[2], n; saveat=saveat) : 
+        cle_monte_activation(p_vals, (t_vals[1],t_vals[3]), t_vals[2], n; model=model, saveat=saveat, adaptive=adaptive, dt=dt, maxiters=maxiters)
+    plts=plot!(sols; idxs=1, color=colors, la=la, lw=lw, xticks=:auto, yticks=:auto, xguide="Time in [au]", yguide="Activation", label="", ylimit=(0.,ymax), kwargs...)
+    # plot!(sols; idxs=1, color=colors, la=la, lw=lw, xticks=:auto, yticks=:auto, xguide="Time in [au]", yguide="Activation", label="", ylimit=(0.,ymax), kwargs...)
+    plot_nc_minmaxes && plot_nc_min_maxes!(p_vals, (t_vals[1],t_vals[3]); model=model, lw=lw_nc_mm, la=la_nc_mm)
+    plot_vertical_line!(0,(ymax==Inf ? 1.05*maximum(first.(vcat(getfield.(sols.u,:u)...))) : max(ymax,1.05*maximum(first.(vcat(getfield.(sols.u,:u)...))))),lw=activation_lw,la=activation_la,left_margin=5mm,xlimit=(t_vals[1],t_vals[3]))
+    return plts, sols
+end
+
+
+function ensemble_to_matrix(sols::EnsembleSolution)
+    # Number of trajectories (ensemble members)
+    num_trajectories = length(sols)
+    
+    # Extract the first solution to determine the size (num of time points, num of states)
+    first_sol = sols[1]
+    num_time_points = length(first_sol.u)   # Time points
+    num_states = length(first_sol.u[1])     # Number of states at each time point (assuming u is a vector)
+    
+    # Create a 3D array: (time points, states, ensemble members)
+    trajectory_matrix = zeros(Float64, num_time_points, num_states, num_trajectories+1)
+    
+    # Loop over each ensemble member and extract the trajectory
+    trajectory_matrix[:,1,1]=sols[1].t
+    for i in 1:num_trajectories
+        sol = sols[i]
+        for t in 1:num_time_points
+            trajectory_matrix[t, :, i+1] = sol.u[t]  # Set the trajectory for all states at time point t
+        end
+    end
+    
+    return trajectory_matrix
+end
+
+
+function save_behaviour_grid_as_mat(behaviour_grid::BehaviourGrid, filename::String)
+    # Extract the behavior grid data and relevant grid information
+    behaviors = behaviour_grid.behaviours  # Matrix of Symbol
+    S_grid = behaviour_grid.S_grid         # S grid values
+    D_grid = behaviour_grid.D_grid         # D grid values
+    params = behaviour_grid.params         # Parameters τ, v0, n, η
+
+    # Convert the `behaviours` symbols matrix into a numerical matrix or cell array
+    # because MATLAB doesn't support Julia's `Symbol` type natively
+    behaviour_numeric = map(x -> string(x), behaviors)
+
+    # Save the grid data to a .mat file
+    matwrite(filename, Dict(
+        "behaviours" => behaviour_numeric,  # Save the behavior grid as strings
+        "S_grid" => S_grid,                 # Save the S_grid (y-axis data)
+        "D_grid" => D_grid,                 # Save the D_grid (x-axis data)
+        "params" => params                  # Save the parameters τ, v0, n, η
+    ))
+
+    println("Behaviour grid saved as $filename")
+end
