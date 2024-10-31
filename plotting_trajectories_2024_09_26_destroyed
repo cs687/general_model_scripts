@@ -4,9 +4,11 @@
 
 #################################### Fixed Parameters #################################
 # fix_S=4.5;
-fix_S_all=[4,4.5,5]; #fixed S (horizontal line)
+#fix_S_all=[4,4.5,5]; #fixed S (horizontal line)
+fix_S_all=[4,4.5,5,7,10,15]; #fixed S (horizontal line)
 num_traces=100; #number of simulated traces per parameter value
-params = [0.2,0.01,2,0.05]; #Plotted behaviour grid:  #(τ, v0, n, η)
+params = [0.2,0.01,2,0.05]; #Plotted behaviour grid:  #(τ, v0, n, η) for delay
+#params = [3,0.01,2,0.05]; #Plotted behaviour grid:  #(τ, v0, n, η) for oscillation
 file_name="tau_"*string(params[1])*"-v0_"*string(params[2])*"-n_"*string(params[3])*"-nu_"*string(params[4]);
 folder_name="../Simulation_Data/Behaviour_map_"*file_name;
 
@@ -94,6 +96,8 @@ save_behaviour_grid_as_mat(bg,folder_name *"/behavior_map_"* file_name * ".mat")
 ############################adding point where sample is taken to bahviour plot###############################
 #not sure if this is working
 samples=[];
+ind=1;
+samples_all=[];
 for fix_S in fix_S_all
     println(fix_S)
     samples = [
@@ -102,8 +106,12 @@ for fix_S in fix_S_all
     (4, fix_S),(5, fix_S),(6, fix_S),(7, fix_S),(8, fix_S),
     (9, fix_S),(10, fix_S),(15, fix_S),
     (20, fix_S),(50, fix_S)]
-
-
+    if ind==1
+        samples_all=samples
+    else
+        samples_all=append!(samples_all,samples)
+    end
+    ind=ind+1;
     #Setting Plotting params
     #1 = @layout grid(1,length(samples))
     layout = @layout grid(length(fix_S_all),length(samples))
@@ -113,7 +121,8 @@ end
 
 # Make simulation plots.
 make_p(ps, sample) = [sample[2]; sample[1]; ps]
-sample_ps = [make_p(params, sample) for sample in samples]
+#sample_ps = [make_p(params, sample) for sample in samples]
+sample_ps = [make_p(params, sample) for sample in samples_all]
 display(behaviour_plot)
 # savefig("test.png")
 savefig(folder_name*"/behaviour_plot.png")
