@@ -9,8 +9,24 @@ data_name={'behavior_map_tau_0.2-v0_0.01-n_2.0-nu_0.05.mat',...
 % in_path='/Users/cs687/Documents/General Model Article/Simulation_Data/Behaviour_map_tau_0.2-v0_0.01-n_2.0-nu_0.05_grid';
 % data_name='behavior_map_tau_0.2-v0_0.01-n_2.0-nu_0.05.mat';
 %in_data=load('test.mat');
-figure('Position',[1,1,1920/2,800],'color','w');
-ax=
+%figure('Position',[1,1,1920/2,800],'color','w');
+
+fig_para.Linewidth=2;
+fig_para.FontSize=8;
+fig_para.Fontweight='bold';
+fig_para.FontName='Arial';
+fig_para.Position=[10, 10, 18, 5.5];
+fig_para.hline_width=1;
+fig_para.PlotLinewidth=1;
+fig_para.gap_h=0.1;
+fig_para.margin_h=[0.15,0.025];
+
+
+figure('Color','w');
+set(gcf, 'Units', 'centimeters', ...
+    'Position', fig_para.Position, 'PaperUnits', 'centimeters', 'PaperType','a4');
+
+
 for now=flip(1:length(in_path))
     in_data=load([in_path{now},'/',data_name{now}]);
     

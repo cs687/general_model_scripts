@@ -1,4 +1,4 @@
-
+2
 
 in_path='/Users/cs687/Documents/General Model Article/Simulation_Data/Behaviour_map_tau_0.2-v0_0.01-n_2.0-nu_0.05';
 Di=dir([in_path,'/S*']);
